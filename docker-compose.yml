@@ -1,0 +1,37 @@
+version: '3.8'
+# docker compose dev
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginxc
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./public:/app/public
+      - ./resource:/app/resource
+      - ./src:/app/src
+    links:
+      - php
+    networks: 
+      - int3rnal
+  
+  php:
+    build:
+      context: ./php
+      dockerfile: Dockerfile
+    container_name: phpc
+    #command: sh -c "chmod -R a+rw ../../../app && php-fpm -F -R"
+    restart: always
+    volumes:
+      - ./public:/app/public
+      - ./resource:/app/resource
+      - ./src:/app/src
+    networks: 
+      - int3rnal
+  
+networks:
+  int3rnal:
+    driver: bridge
