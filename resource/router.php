@@ -1,22 +1,26 @@
 <?php
 
-    define('HTTP_GET', 'GET');
-    define('HTTP_POST', 'POST');
-    define('HTTP_PUT', 'PUT');
-    define('HTTP_DELETE', 'DELETE');
-
     class Router 
     {
         private static ?Router $instance = null;
         private array $routes;
         private $notFoundCallback;
 
+        public const HTTP_GET = 'GET';
+        public const HTTP_POST = 'POST';
+
+        private const ALLOWED_METHODS =
+        [
+            self::HTTP_GET,
+            self::HTTP_POST,
+        ];
+
         private function __construct()
         {
             $this->routes = array();
         }
 
-        public function getRoutesLen()
+        public function getRoutesNumber()
         {
             return count($this->routes);
         }
@@ -29,8 +33,11 @@
             return self::$instance;
         }
 
-        public function addRoute(string $method, string $path, array $args, callable $callback)  : void
+        public function addRoute(string $method, string $path, array $args, callable $callback)  : bool
         {
+            if (!in_array($method, self::ALLOWED_METHODS))
+                return false;
+            
             $this->routes[] = 
             [
                 'method' => $method,
@@ -38,21 +45,24 @@
                 'path' => $path, 
                 'callback' => $callback
             ];
+            return true;
         }
 
-        public function setNotFoundCallback(callable $notFoundCallback)
+        public function setNotFoundCallback($notFoundCallback)
         {
             $this->notFoundCallback = $notFoundCallback;
         }
 
-        //  Request args = array_keys($_GET)
+        //  Request args = array_keys($_[METHOD])
         public function handleRequest(string $method, string $path)
         {
-            $req_args = $method === HTTP_GET ? array_keys($_GET) : array_keys($_POST); 
+            $parsed_path = parse_url($path, PHP_URL_PATH);
+
+            $req_args = $method === self::HTTP_GET ? array_keys($_GET) : array_keys($_POST); 
 
             foreach ($this->routes as $route) 
             {
-                $res = $this->matchPath($route['path'], $path);
+                $res = $this->matchPath($route['path'], $parsed_path);
 
                 if ($res['status'] && $route['method'] === $method && self::compare_args($route['args'], $req_args))
                 {
@@ -79,6 +89,5 @@
             return $route_args_lwr === $req_args_lwr;
         }
     }
-
 
 ?>
